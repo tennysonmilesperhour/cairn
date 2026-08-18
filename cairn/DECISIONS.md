@@ -78,3 +78,68 @@ Append-only. Each entry: what was decided, why, and what would reverse it.
 **Decided:** Ship both themes in phase 1.
 **Why:** Primary use is dawn and dusk in canyons. This is a functional requirement, not a styling nicety.
 **Reverses if:** nothing.
+
+---
+
+## D012. Hiking relations keep their longest contiguous component
+**Decided:** When the ways of a `route=hiking` relation do not merge into one
+contiguous line, the longest resulting component becomes the trail geometry. The
+discarded length, the component count, and the member way count are recorded in
+`tags` so the coverage report can show what the choice costs.
+**Why:** The `trails.geom` column is `geometry(LineString, 4326)`. Real hiking
+relations frequently do not merge cleanly: gaps in the OSM data, mapped
+alternates, and approach spurs all produce extra components. The alternatives
+were widening the column to MultiLineString, which the schema explicitly is not
+open to improvising, or splitting one relation across several rows, which the
+`unique (osm_type, osm_id)` constraint forbids. Keeping the longest component
+preserves the main line and, because the drop is measured rather than silent,
+makes the cost visible in the report instead of hiding it.
+**Reverses if:** the report shows a large fraction of relations arriving in
+several components, or shows significant mileage being dropped. Then the schema
+question gets reopened deliberately rather than worked around.
+
+---
+
+## D013. A merged relation inherits surface from its member ways
+**Decided:** `surface` for a trail built from a hiking relation comes from the
+relation's own tag when it has one, otherwise from the most common `surface`
+among its member ways. `tags.surface_source` records which.
+**Why:** Route relations carry route metadata and rarely carry `surface`, while
+the member ways usually do. Reading only the relation tag would report a trail
+whose every segment is tagged `ground` as having no surface data, which
+understates real coverage in exactly the report that decides whether coverage is
+good enough. Recording the source keeps the two cases separable.
+**Reverses if:** member ways within single relations turn out to disagree about
+surface often enough that a mode is misleading.
+
+---
+
+## D014. The elevation noise threshold applies to runs, not to steps
+**Decided:** The 5m threshold from D007 is applied to a run of consistent
+movement between turning points, not to the difference between consecutive
+samples. Gain is committed when the series reverses by at least 5m and the run
+itself spans at least 5m.
+**Why:** D007 says to use a 5m threshold but not where to apply it, and the
+obvious reading is wrong in a way that is worse than having no threshold at all.
+A 10 percent grade sampled every 20m rises about 2m per sample, so a per step
+threshold discards every step of a real climb and reports zero gain. Measured on
+a synthetic 100m climb, per step thresholding returns 0.0m while returning 6m of
+phantom gain on flat noise. Applying it to runs returns 100m and 0m. Committing
+whole runs peak to valley also avoids the undercount that a simpler pivot
+version accumulates at every direction reversal.
+**Reverses if:** field comparison against recorded tracks shows systematic bias
+in either direction.
+
+---
+
+## D015. Elevation resampling keeps every original vertex
+**Decided:** Trail geometry is resampled so that no step exceeds 20m, with every
+original OSM vertex retained, rather than sampled at exact 20m intervals.
+**Why:** Sampling at fixed intervals only draws chords across bends. Measured on
+a two segment test line this both shortened the trail, by 5.5m over 9.8km, and
+skipped the terrain at the corner entirely. On a switchbacked Wasatch trail that
+is precisely where the elevation change is. ARCHITECTURE.md asks for roughly 20m
+intervals, and this satisfies that as an upper bound.
+**Reverses if:** densely mapped trails produce enough sample points to make the
+DEM pass slow, at which point vertices get thinned before sampling rather than
+after.

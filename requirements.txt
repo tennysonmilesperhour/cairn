@@ -1,0 +1,8 @@
+# Phase 0 ingest. Python 3.11 or newer.
+requests==2.33.1        # Overpass HTTP
+shapely==2.1.2          # geometry, ST_LineMerge equivalent
+pyproj==3.7.2           # geodesic length on WGS84
+rasterio==1.4.4         # Copernicus GLO-30 DEM sampling
+numpy>=1.26             # elevation series maths
+psycopg2-binary==2.9.12 # Supabase Postgres upsert
+pytest==9.1.1           # elevation and distance tests

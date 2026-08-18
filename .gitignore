@@ -1,0 +1,12 @@
+# Ingest working data. Overpass cache, DEM tiles, and normalized output are all
+# regenerable and far too large for git.
+data/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+.env
+.env.local
